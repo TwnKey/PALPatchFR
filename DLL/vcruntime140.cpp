@@ -454,60 +454,7 @@ inline void _hook_setup() {
 #endif
 }
 HMODULE base;
-void compute_length_str_dialog() {
 
-	uint32_t dialog_struct_addr = *((uint32_t*)((uint32_t)base + 0x13e690));
-	uint8_t * dialog_a_afficher = (uint8_t *)(*(uint32_t *)(dialog_struct_addr + 0x3C));
-	uint8_t * dialog_affiche = (uint8_t*)(*(uint32_t*)(dialog_struct_addr + 0x40));
-	int idx_str = 0;
-
-	uint16_t current_char = 0;
-	uint16_t terminus = 0;
-	size_t current_line_count = 0;
-	size_t line_counter = 0;
-	size_t limit_char_per_line = *(uint16_t*)(dialog_struct_addr + 0x22)/0x11;
-
-
-	while (true) {
-		terminus = (dialog_a_afficher[idx_str + 1] << 8) + dialog_a_afficher[idx_str];
-		if ((terminus == 0x5125) || (terminus == 0x5025) || (line_counter >= 4)) {
-			break;
-		}
-		else if (terminus == 0x4E25) {
-			current_line_count = 0;
-			line_counter++;
-			idx_str += 2;
-		}
-		else if ((terminus == 0x4C25) || (terminus == 0x5325) || (terminus == 0x4325) || (terminus == 0x4425) || (terminus == 0x4725) || (terminus == 0x4225) || (terminus == 0x6225) || (terminus == 0x4125) || (terminus == 0x6125) || (terminus == 0x4b25) || (terminus == 0x6b25)) {
-		
-			idx_str += 2;
-		
-		}
-		else {
-			if (dialog_a_afficher[idx_str] >= 128) {
-				current_char = (dialog_a_afficher[idx_str + 1] << 8) + dialog_a_afficher[idx_str];
-				idx_str += 2;
-				current_line_count++;
-			}
-			else {
-				current_char = dialog_a_afficher[idx_str];
-				idx_str += 1;
-				current_line_count++;
-			}
-		}
-		if (current_line_count > limit_char_per_line) {
-		
-			current_line_count = 0;
-			line_counter++;
-		}
-		
-		
-	}
-
-	
-	*(uint32_t*)(dialog_struct_addr + 0x40) = *(uint32_t*)(dialog_struct_addr + 0x40) + idx_str;
-	*(uint32_t*)(dialog_struct_addr + 0x3C) = *(uint32_t*)(dialog_struct_addr + 0x40);
-}
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 	mHinst = hinstDLL;
@@ -527,33 +474,34 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 		}
 		_hook_setup();
 
-		//ULONG_PTR new_section_start = (ULONG_PTR)VirtualAlloc(nullptr, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READ);
+		ULONG_PTR new_section_start = (ULONG_PTR)VirtualAlloc(nullptr, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READ);
+		ULONG_PTR new_section_start2 = new_section_start + 7 + 10 + 5;
 
 		base = GetModuleHandle(NULL);
-		/*uint32_t addr_start = (uint32_t)base + 0xa07df + 5;
-		uint32_t addr_ret = (uint32_t)base + 0xa07e6;
-
+		uint32_t addr_start = (uint32_t)base + 0xa14fb + 5;
+		uint32_t addr_start2 = (uint32_t)base + 0xa04c4 + 5;
+		uint32_t addr_ret = (uint32_t)base + 0xa1502;
+		uint32_t addr_ret2 = (uint32_t)base + 0xa04ca;
 
 		std::vector<BYTE> jmp_bytes = number_to_bytes(new_section_start - addr_start, sizeof(addr_start));
+		std::vector<BYTE> jmp_bytes2 = number_to_bytes(new_section_start2 - addr_start2, sizeof(addr_start));
+		std::vector<BYTE> addr_speed = number_to_bytes(0x13a600 + (uint32_t)base, sizeof(addr_start));
 		RewriteMemoryEx(addr_start - 5, { 0xE9, jmp_bytes[0], jmp_bytes[1], jmp_bytes[2], jmp_bytes[3] });
-		std::vector<BYTE> ret_bytes_1 = number_to_bytes(addr_ret - (new_section_start + 4 + 6), sizeof(addr_start));
-		std::vector<BYTE> ret_bytes_2 = number_to_bytes(addr_ret - (new_section_start + 4 + 6 + 6 + 5 + 6), sizeof(addr_start));
-		std::vector<BYTE> code_bytes = { 0x83, 0x7D, 0x88, 0x01,
-		0x0F, 0x85,ret_bytes_1[0], ret_bytes_1[1], ret_bytes_1[2], ret_bytes_1[3],
-		0xC7, 0x45, 0x88, 0x00, 0x00,0x00, 0x00,
-		0x83, 0x3D,0x58, 0xCD, 0x2F, 0x00, 0x00,
-		0xE9, ret_bytes_2[0], ret_bytes_2[1], ret_bytes_2[2], ret_bytes_2[3]
+		RewriteMemoryEx(addr_start2 - 5, { 0xE9, jmp_bytes2[0], jmp_bytes2[1], jmp_bytes2[2], jmp_bytes2[3] });
+		std::vector<BYTE> ret_bytes_1 = number_to_bytes(addr_ret - (new_section_start2), sizeof(addr_start));
+		std::vector<BYTE> ret_bytes_2 = number_to_bytes(addr_ret2 - (new_section_start2 + 6 + 10 + 5), sizeof(addr_start));
+		std::vector<BYTE> code_bytes = { 0xC7, 0x45, 0x88, 0x01, 0x00, 0x00, 0x00,
+			0xC7, 0x05, addr_speed[0], addr_speed[1], addr_speed[2], addr_speed[3], 0x15, 0x00, 0x00, 0x00,
+			0xE9, ret_bytes_1[0], ret_bytes_1[1], ret_bytes_1[2], ret_bytes_1[3]
 		};
-		RewriteMemoryEx(new_section_start, code_bytes);*/
-
-
-		/*uint32_t addr_to_edit = (uint32_t)base + 0xa14fb + 3;
-		RewriteMemoryEx(addr_to_edit, { 0 });
-
-		std::vector<BYTE> call_bytes = number_to_bytes((uint32_t)(&compute_length_str_dialog) - ((uint32_t)base + 0xa080d + 5), 4);
-		RewriteMemoryEx(((uint32_t)base + 0xa080d), { 0xE8, call_bytes[0], call_bytes[1], call_bytes[2], call_bytes[3], 0x90 });*/
-		uint32_t addr_to_edit = (uint32_t)base + 0x6b5b1 + 1;
-		RewriteMemoryEx(addr_to_edit, { 0x15 });
+		std::vector<BYTE> code_bytes2 = { 0x8B, 0x4D, 0xFC, 
+			0x8B, 0x51, 0x08,
+			0xC7, 0x05, addr_speed[0], addr_speed[1], addr_speed[2], addr_speed[3], 0x23, 0x00, 0x00, 0x00,
+			0xE9, ret_bytes_2[0], ret_bytes_2[1], ret_bytes_2[2], ret_bytes_2[3]
+		};
+		RewriteMemoryEx(new_section_start, code_bytes);
+		RewriteMemoryEx(new_section_start2, code_bytes2);
+		
 		
 	}
 	else if (fdwReason == DLL_PROCESS_DETACH) {
