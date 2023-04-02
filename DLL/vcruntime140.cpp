@@ -475,12 +475,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 		_hook_setup();
 
 		ULONG_PTR new_section_start = (ULONG_PTR)VirtualAlloc(nullptr, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READ);
-		ULONG_PTR new_section_start2 = new_section_start + 7 + 10 + 5;
+		ULONG_PTR new_section_start2 = new_section_start + 6 + 10 + 5;
 
 		base = GetModuleHandle(NULL);
-		uint32_t addr_start = (uint32_t)base + 0xa14fb + 5;
+		uint32_t addr_start = (uint32_t)base + 0xa0a1f + 5;
 		uint32_t addr_start2 = (uint32_t)base + 0xa04c4 + 5;
-		uint32_t addr_ret = (uint32_t)base + 0xa1502;
+		uint32_t addr_ret = (uint32_t)base + 0xa0A25;
 		uint32_t addr_ret2 = (uint32_t)base + 0xa04ca;
 
 		std::vector<BYTE> jmp_bytes = number_to_bytes(new_section_start - addr_start, sizeof(addr_start));
@@ -490,7 +490,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 		RewriteMemoryEx(addr_start2 - 5, { 0xE9, jmp_bytes2[0], jmp_bytes2[1], jmp_bytes2[2], jmp_bytes2[3] });
 		std::vector<BYTE> ret_bytes_1 = number_to_bytes(addr_ret - (new_section_start2), sizeof(addr_start));
 		std::vector<BYTE> ret_bytes_2 = number_to_bytes(addr_ret2 - (new_section_start2 + 6 + 10 + 5), sizeof(addr_start));
-		std::vector<BYTE> code_bytes = { 0xC7, 0x45, 0x88, 0x01, 0x00, 0x00, 0x00,
+		std::vector<BYTE> code_bytes = { 0x8B, 0x4D, 0xFC,
+			0x8B, 0x55, 0xFC,
 			0xC7, 0x05, addr_speed[0], addr_speed[1], addr_speed[2], addr_speed[3], 0x15, 0x00, 0x00, 0x00,
 			0xE9, ret_bytes_1[0], ret_bytes_1[1], ret_bytes_1[2], ret_bytes_1[3]
 		};
